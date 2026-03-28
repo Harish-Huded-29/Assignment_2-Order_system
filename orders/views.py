@@ -38,7 +38,6 @@ class OrderCreateView(APIView):
 
         # ── Step 2: Check for duplicate request ───────────────────────────────
         # If we've seen this key before, return the existing order
-        # This is Phase 4 (Idempotency) — built in from day one!
         if idempotency_key:
             existing = Order.objects.filter(
                 idempotency_key=idempotency_key
@@ -71,7 +70,7 @@ class OrderCreateView(APIView):
         from .tasks import process_order
         task = process_order.delay(str(order.id))
 
-        # Store the Celery task ID so we can cancel it later (Day 6)
+        # Store the Celery task ID so we can cancel it later 
         order.celery_task_id = task.id
         order.save(update_fields=['celery_task_id'])
 
