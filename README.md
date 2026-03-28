@@ -51,39 +51,7 @@ Django REST API  ─────────────────────
 ---
 ### 📁 Project Structure
 
-ORDER_SYSTEM/
-├── core/                     # Main Django project configuration
-│   ├── __init__.py
-│   ├── asgi.py              # ASGI config for async support
-│   ├── celery.py            # Celery configuration
-│   ├── settings.py          # Project settings
-│   ├── urls.py              # Root URL routing
-│   └── wsgi.py              # WSGI entry point
-│
-├── orders/                  # Orders app
-│   ├── migrations/          # Database migrations
-│   ├── templates/           # HTML templates
-│   ├── __init__.py
-│   ├── admin.py             # Admin panel config
-│   ├── apps.py              # App configuration
-│   ├── logger.py            # Custom logging logic
-│   ├── models.py            # Database models
-│   ├── serializers.py       # DRF serializers
-│   ├── tasks.py             # Celery background tasks
-│   ├── tests.py             # Unit tests
-│   ├── urls.py              # App routes
-│   └── views.py             # Business logic / API views
-│
-├── logs/
-│   └── orders.log           # Application logs
-│
-├── venv/                    # Virtual environment (ignored in git)
-├── .env                     # Environment variables
-├── .gitignore               # Git ignore rules
-├── db.sqlite3               # SQLite database
-├── manage.py                # Django CLI entry point
-└── requirements.txt         # Python dependencies
-
+<pre> ORDER_SYSTEM/ ├── core/ # Main Django project configuration │ ├── __init__.py │ ├── asgi.py # ASGI config for async support │ ├── celery.py # Celery configuration │ ├── settings.py # Project settings │ ├── urls.py # Root URL routing │ └── wsgi.py # WSGI entry point │ ├── orders/ # Orders app │ ├── migrations/ # Database migrations │ ├── templates/ # HTML templates │ ├── __init__.py │ ├── admin.py # Admin panel config │ ├── apps.py # App configuration │ ├── logger.py # Custom logging logic │ ├── models.py # Database models │ ├── serializers.py # DRF serializers │ ├── tasks.py # Celery background tasks │ ├── tests.py # Unit tests │ ├── urls.py # App routes │ └── views.py # Business logic / API views │ ├── logs/ │ └── orders.log # Application logs │ ├── venv/ # Virtual environment (ignored in git) ├── .env # Environment variables ├── .gitignore # Git ignore rules ├── db.sqlite3 # SQLite database ├── manage.py # Django CLI entry point └── requirements.txt # Python dependencies </pre>
 
 ---
 
