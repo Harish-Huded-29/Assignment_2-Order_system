@@ -48,10 +48,9 @@ Django REST API  ─────────────────────
                                ├── Retry on failure (max 3 times)
                                └── Update order status in DB
 ```
-
+---
 ### 📁 Project Structure
 ORDER_SYSTEM/
-│
 ├── core/                     # Main Django project configuration
 │   ├── __init__.py
 │   ├── asgi.py              # ASGI config for async support
@@ -77,15 +76,12 @@ ORDER_SYSTEM/
 ├── logs/
 │   └── orders.log           # Application logs
 │
-│
 ├── venv/                    # Virtual environment (ignored in git)
-│
 ├── .env                     # Environment variables
 ├── .gitignore               # Git ignore rules
 ├── db.sqlite3               # SQLite database
 ├── manage.py                # Django CLI entry point
 └── requirements.txt         # Python dependencies
-
 ---
 
 ## 🚀 Full Setup Guide — From Zero to Running
