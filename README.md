@@ -49,7 +49,6 @@ Django REST API  ─────────────────────
                                └── Update order status in DB
 ```
 ---
-### 📁 Project Structure
 
 ## 📁 Project Structure
 
