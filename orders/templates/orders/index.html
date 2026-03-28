@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Order System</title>
+  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #0f0f0f;
+      color: #e0e0e0;
+      min-height: 100vh;
+      padding: 24px;
+    }
+
+    h1 {
+      font-size: 22px;
+      font-weight: 500;
+      margin-bottom: 24px;
+      color: #ffffff;
+      border-bottom: 1px solid #2a2a2a;
+      padding-bottom: 12px;
+    }
+
+    h2 {
+      font-size: 16px;
+      font-weight: 500;
+      margin-bottom: 16px;
+      color: #aaaaaa;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 380px 1fr;
+      gap: 24px;
+      max-width: 1100px;
+    }
+
+    .card {
+      background: #1a1a1a;
+      border: 1px solid #2a2a2a;
+      border-radius: 10px;
+      padding: 20px;
+    }
+
+    /* ── Form ── */
+    .form-group {
+      margin-bottom: 14px;
+    }
+
+    label {
+      display: block;
+      font-size: 12px;
+      color: #888;
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    input, select {
+      width: 100%;
+      background: #111;
+      border: 1px solid #333;
+      border-radius: 6px;
+      padding: 10px 12px;
+      color: #e0e0e0;
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    input:focus, select:focus {
+      border-color: #555;
+    }
+
+    .btn {
+      width: 100%;
+      padding: 11px;
+      border: none;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: opacity 0.2s;
+      margin-top: 4px;
+    }
+
+    .btn:hover { opacity: 0.85; }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .btn-primary { background: #2563eb; color: #fff; }
+    .btn-danger  { background: #dc2626; color: #fff; }
+
+    /* ── Inventory bar ── */
+    .inv-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .inv-item {
+      background: #111;
+      border: 1px solid #2a2a2a;
+      border-radius: 8px;
+      padding: 10px 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .inv-name  { font-size: 13px; color: #aaa; text-transform: capitalize; }
+    .inv-count { font-size: 18px; font-weight: 600; color: #fff; }
+    .inv-count.low  { color: #ef4444; }
+    .inv-count.zero { color: #6b7280; }
+
+    /* ── Orders list ── */
+    .order-card {
+      background: #111;
+      border: 1px solid #2a2a2a;
+      border-radius: 8px;
+      padding: 14px 16px;
+      margin-bottom: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .order-info { flex: 1; min-width: 0; }
+    .order-id   { font-size: 11px; color: #555; font-family: monospace; margin-bottom: 4px; }
+    .order-items { font-size: 13px; color: #ccc; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+    .badge {
+      font-size: 11px;
+      font-weight: 600;
+      padding: 3px 10px;
+      border-radius: 20px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      white-space: nowrap;
+    }
+
+    .badge-pending    { background: #78350f; color: #fbbf24; }
+    .badge-processing { background: #1e3a5f; color: #60a5fa; }
+    .badge-completed  { background: #14532d; color: #4ade80; }
+    .badge-failed     { background: #450a0a; color: #f87171; }
+    .badge-cancelled  { background: #1f2937; color: #9ca3af; }
+
+    .cancel-btn {
+      background: none;
+      border: 1px solid #333;
+      color: #888;
+      padding: 5px 10px;
+      border-radius: 5px;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+    .cancel-btn:hover { border-color: #dc2626; color: #dc2626; }
+
+    /* ── Filter ── */
+    .filter-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+
+    .filter-btn {
+      padding: 5px 14px;
+      border-radius: 20px;
+      border: 1px solid #333;
+      background: none;
+      color: #888;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .filter-btn:hover,
+    .filter-btn.active { background: #2563eb; border-color: #2563eb; color: #fff; }
+
+    /* ── Toast ── */
+    #toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: #1f2937;
+      border: 1px solid #374151;
+      color: #e0e0e0;
+      padding: 12px 18px;
+      border-radius: 8px;
+      font-size: 13px;
+      max-width: 320px;
+      opacity: 0;
+      transform: translateY(10px);
+      transition: all 0.3s;
+      z-index: 1000;
+    }
+    #toast.show { opacity: 1; transform: translateY(0); }
+    #toast.success { border-color: #16a34a; }
+    #toast.error   { border-color: #dc2626; }
+
+    .refresh-hint {
+      font-size: 11px;
+      color: #444;
+      margin-bottom: 12px;
+    }
+
+    .empty-state {
+      text-align: center;
+      color: #444;
+      padding: 40px 0;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+
+<h1>Order Processing System</h1>
+
+<div class="layout">
+
+  <!-- LEFT: Form + Inventory -->
+  <div>
+
+    <!-- Inventory -->
+    <div class="card" style="margin-bottom: 16px;">
+      <h2>Live Inventory</h2>
+      <div class="inv-grid" id="inv-grid">
+        <div class="inv-item"><span class="inv-name">loading...</span></div>
+      </div>
+    </div>
+
+    <!-- Order Form -->
+    <div class="card">
+      <h2>Place Order</h2>
+
+      <div class="form-group">
+        <label>Item</label>
+        <select id="item-name">
+          <option value="burger">Burger</option>
+          <option value="pizza">Pizza</option>
+          <option value="pasta">Pasta</option>
+          <option value="cake">Cake</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>Quantity</label>
+        <input type="number" id="item-qty" value="1" min="1" max="20">
+      </div>
+
+      <div class="form-group">
+        <label>Price per item (₹)</label>
+        <input type="number" id="item-price" value="100" min="1">
+      </div>
+
+      <button class="btn btn-primary" id="pay-btn" onclick="placeOrder()">
+        Pay with Razorpay
+      </button>
+
+      <div style="margin-top: 12px;">
+        <div style="font-size: 11px; color: #555; margin-bottom: 6px;">
+          TEST CARDS (use any future date + any CVV)
+        </div>
+        <div style="font-size: 11px; color: #666; line-height: 1.8;">
+          ✅ Success: 4111 1111 1111 1111<br>
+          ❌ Failure: 4000 0000 0000 0002
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- RIGHT: Orders List -->
+  <div class="card">
+    <h2>Orders</h2>
+    <div class="refresh-hint" id="refresh-hint">Auto-refreshes every 3 seconds</div>
+
+    <div class="filter-row">
+      <button class="filter-btn active" onclick="setFilter('all', this)">All</button>
+      <button class="filter-btn" onclick="setFilter('pending', this)">Pending</button>
+      <button class="filter-btn" onclick="setFilter('processing', this)">Processing</button>
+      <button class="filter-btn" onclick="setFilter('completed', this)">Completed</button>
+      <button class="filter-btn" onclick="setFilter('failed', this)">Failed</button>
+      <button class="filter-btn" onclick="setFilter('cancelled', this)">Cancelled</button>
+    </div>
+
+    <div id="orders-list">
+      <div class="empty-state">No orders yet</div>
+    </div>
+  </div>
+
+</div>
+
+<div id="toast"></div>
+
+<script>
+  // ── State ──────────────────────────────────────────────────────────────────
+  let currentFilter = 'all'
+  let refreshTimer  = null
+
+  // ── Toast ──────────────────────────────────────────────────────────────────
+  function showToast(msg, type = '') {
+    const t = document.getElementById('toast')
+    t.textContent = msg
+    t.className   = 'show ' + type
+    clearTimeout(t._timer)
+    t._timer = setTimeout(() => t.className = '', 3500)
+  }
+
+  // ── Unique key for idempotency ─────────────────────────────────────────────
+  function makeKey() {
+    return 'key-' + Date.now() + '-' + Math.random().toString(36).slice(2, 7)
+  }
+
+  // Gets the CSRF cookie Django sets automatically
+function getCookie(name) {
+  const value = `; ${document.cookie}`
+  const parts = value.split(`; ${name}=`)
+  if (parts.length === 2) return parts.pop().split(';').shift()
+  return ''
+}
+  // ── Place Order ────────────────────────────────────────────────────────────
+  async function placeOrder() {
+    const btn   = document.getElementById('pay-btn')
+    const name  = document.getElementById('item-name').value
+    const qty   = parseInt(document.getElementById('item-qty').value)
+    const price = parseFloat(document.getElementById('item-price').value)
+
+    if (!name || qty < 1 || price < 1) {
+      showToast('Please fill all fields correctly', 'error')
+      return
+    }
+
+    btn.disabled    = true
+    btn.textContent = 'Creating order...'
+
+    try {
+      // Step 1: Create order + Razorpay order on backend
+      const res = await fetch('/api/orders/razorpay/create/', {
+        method:  'POST',
+        headers: {
+          'Content-Type':    'application/json',
+          'Idempotency-Key': makeKey(),
+          'X-CSRFToken':     getCookie('csrftoken'),
+        },
+        body: JSON.stringify({
+          items: [{ name, quantity: qty, price }]
+        })
+      })
+
+      const data = await res.json()
+
+      if (!res.ok) {
+        showToast('Order creation failed: ' + JSON.stringify(data), 'error')
+        return
+      }
+
+      // Step 2: Open Razorpay payment popup
+      const options = {
+        key:      data.razorpay_key_id,
+        amount:   data.amount_paise,
+        currency: 'INR',
+        name:     'Order System',
+        description: `${qty}x ${name}`,
+        order_id: data.razorpay_order_id,
+
+        handler: async function(response) {
+          // Step 3: Payment done — verify with backend
+          showToast('Payment received. Verifying...', '')
+
+          const verifyRes = await fetch('/api/orders/razorpay/verify/', {
+          method:  'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken':  getCookie('csrftoken'),
+          },
+          body: JSON.stringify({
+              order_id:            data.order.id,
+              razorpay_order_id:   response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature:  response.razorpay_signature,
+            })
+          })
+
+          if (verifyRes.ok) {
+            showToast('✅ Order placed! Processing in background...', 'success')
+            loadOrders()
+            loadInventory()
+          } else {
+            showToast('Payment verification failed', 'error')
+          }
+        },
+
+        prefill:  { name: 'Test User', email: 'test@example.com' },
+        theme:    { color: '#2563eb' },
+
+        modal: {
+          ondismiss: function() {
+            showToast('Payment cancelled', '')
+          }
+        }
+      }
+
+      const rzp = new Razorpay(options)
+      rzp.open()
+
+    } catch (err) {
+      showToast('Error: ' + err.message, 'error')
+    } finally {
+      btn.disabled    = false
+      btn.textContent = 'Pay with Razorpay'
+    }
+  }
+
+  // ── Filter ─────────────────────────────────────────────────────────────────
+  function setFilter(f, el) {
+    currentFilter = f
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'))
+    el.classList.add('active')
+    loadOrders()
+  }
+
+  // ── Load Orders ────────────────────────────────────────────────────────────
+  async function loadOrders() {
+    try {
+      const url = currentFilter === 'all'
+        ? '/api/orders/list/'
+        : `/api/orders/list/?status=${currentFilter}`
+
+      const res    = await fetch(url)
+      const orders = await res.json()
+      renderOrders(orders)
+    } catch (err) {
+      console.error('Failed to load orders:', err)
+    }
+  }
+
+  function renderOrders(orders) {
+    const el = document.getElementById('orders-list')
+
+    if (!orders.length) {
+      el.innerHTML = '<div class="empty-state">No orders found</div>'
+      return
+    }
+
+    el.innerHTML = orders.map(o => `
+      <div class="order-card">
+        <div class="order-info">
+          <div class="order-id">${o.id}</div>
+          <div class="order-items">${formatTime(o.created_at)}</div>
+        </div>
+        <span class="badge badge-${o.status}">${o.status}</span>
+        ${['pending','processing'].includes(o.status) ? `
+          <button class="cancel-btn" onclick="cancelOrder('${o.id}')">Cancel</button>
+        ` : ''}
+      </div>
+    `).join('')
+  }
+
+  function formatTime(ts) {
+    return new Date(ts).toLocaleTimeString('en-IN', {
+      hour: '2-digit', minute: '2-digit', second: '2-digit'
+    })
+  }
+
+  // ── Cancel Order ───────────────────────────────────────────────────────────
+  async function cancelOrder(orderId) {
+    if (!confirm('Cancel this order?')) return
+
+    try {
+      const res = await fetch(`/api/orders/${orderId}/cancel/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json',
+          'X-CSRFToken':  getCookie('csrftoken'), 
+        }
+      })
+
+      if (res.ok) {
+        showToast('Order cancelled', 'success')
+        loadOrders()
+      } else {
+        const data = await res.json()
+        showToast('Cannot cancel: ' + (data.error || 'Unknown error'), 'error')
+      }
+    } catch (err) {
+      showToast('Error: ' + err.message, 'error')
+    }
+  }
+
+  // ── Load Inventory ─────────────────────────────────────────────────────────
+  async function loadInventory() {
+    try {
+      const res   = await fetch('/api/inventory/')
+      const items = await res.json()
+      renderInventory(items)
+    } catch (err) {
+      console.error('Failed to load inventory:', err)
+    }
+  }
+
+  function renderInventory(items) {
+    const el = document.getElementById('inv-grid')
+    el.innerHTML = items.map(item => {
+      const cls = item.quantity === 0 ? 'zero' : item.quantity <= 2 ? 'low' : ''
+      return `
+        <div class="inv-item">
+          <span class="inv-name">${item.item_name}</span>
+          <span class="inv-count ${cls}">${item.quantity}</span>
+        </div>
+      `
+    }).join('')
+  }
+
+  // ── Auto Refresh ───────────────────────────────────────────────────────────
+  function startRefresh() {
+    refreshTimer = setInterval(() => {
+      loadOrders()
+      loadInventory()
+    }, 3000)
+  }
+
+  // ── Init ───────────────────────────────────────────────────────────────────
+  loadOrders()
+  loadInventory()
+  startRefresh()
+</script>
+
+</body>
+</html>
