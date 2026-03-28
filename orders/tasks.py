@@ -164,7 +164,7 @@ def check_and_deduct_inventory(order_id, items):
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# HELPERS (same as Day 4)
+# HELPERS
 # ─────────────────────────────────────────────────────────────────────────────
 
 def update_step_metadata(order, step_name, status, error=None):
