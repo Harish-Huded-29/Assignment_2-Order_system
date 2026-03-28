@@ -183,7 +183,7 @@ Replace every `YOUR_...` with your actual values from Steps 5, 6, and 7.
 
 ---
 
-### Step 9 — Create the Logs Folder
+### Step 9 — Create the Logs Folder in root directory of project where manage.py is found
 
 ```bash
 mkdir logs
