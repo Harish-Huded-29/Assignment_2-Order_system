@@ -50,6 +50,7 @@ Django REST API  ─────────────────────
 ```
 ---
 ### 📁 Project Structure
+
 ORDER_SYSTEM/
 ├── core/                     # Main Django project configuration
 │   ├── __init__.py
@@ -82,6 +83,8 @@ ORDER_SYSTEM/
 ├── db.sqlite3               # SQLite database
 ├── manage.py                # Django CLI entry point
 └── requirements.txt         # Python dependencies
+
+
 ---
 
 ## 🚀 Full Setup Guide — From Zero to Running
