@@ -70,7 +70,7 @@ You need **Python 3.10 or higher**. If not installed, download from https://pyth
 ### Step 2 — Get the Code
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/order-system.git
+git clone https://github.com/Harish-Huded-29/order-system.git
 cd order-system
 ```
 
