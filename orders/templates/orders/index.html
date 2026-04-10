@@ -1,0 +1,744 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Order System</title>
+  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #0f0f0f;
+      color: #e0e0e0;
+      min-height: 100vh;
+      padding: 24px;
+    }
+
+    h1 {
+      font-size: 22px;
+      font-weight: 500;
+      margin-bottom: 24px;
+      color: #ffffff;
+      border-bottom: 1px solid #2a2a2a;
+      padding-bottom: 12px;
+    }
+
+    h2 {
+      font-size: 16px;
+      font-weight: 500;
+      margin-bottom: 16px;
+      color: #aaaaaa;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 380px 1fr;
+      gap: 24px;
+      max-width: 1100px;
+    }
+
+    .card {
+      background: #1a1a1a;
+      border: 1px solid #2a2a2a;
+      border-radius: 10px;
+      padding: 20px;
+    }
+
+    /* ── Form ── */
+    .form-group {
+      margin-bottom: 14px;
+    }
+
+    label {
+      display: block;
+      font-size: 12px;
+      color: #888;
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    input, select {
+      width: 100%;
+      background: #111;
+      border: 1px solid #333;
+      border-radius: 6px;
+      padding: 10px 12px;
+      color: #e0e0e0;
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    input:focus, select:focus {
+      border-color: #555;
+    }
+
+    .btn {
+      width: 100%;
+      padding: 11px;
+      border: none;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: opacity 0.2s;
+      margin-top: 4px;
+    }
+
+    .btn:hover { opacity: 0.85; }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .btn-primary { background: #2563eb; color: #fff; }
+    .btn-danger  { background: #dc2626; color: #fff; }
+
+    /* ── Inventory bar ── */
+    .inv-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .inv-item {
+      background: #111;
+      border: 1px solid #2a2a2a;
+      border-radius: 8px;
+      padding: 10px 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .inv-name  { font-size: 13px; color: #aaa; text-transform: capitalize; }
+    .inv-count { font-size: 18px; font-weight: 600; color: #fff; }
+    .inv-count.low  { color: #ef4444; }
+    .inv-count.zero { color: #6b7280; }
+
+    /* ── Cart ── */
+    .cart-section {
+      margin-bottom: 16px;
+    }
+
+    .cart-item {
+      background: #111;
+      border: 1px solid #2a2a2a;
+      border-radius: 8px;
+      padding: 10px 14px;
+      margin-bottom: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .cart-item-name { font-size: 13px; color: #ccc; text-transform: capitalize; }
+    .cart-item-qty  { font-size: 12px; color: #888; }
+    .cart-remove    { background: none; border: 1px solid #333; color: #888;
+                      padding: 3px 8px; border-radius: 4px; font-size: 11px;
+                      cursor: pointer; }
+    .cart-remove:hover { border-color: #dc2626; color: #dc2626; }
+
+    .cart-empty { font-size: 12px; color: #444; text-align: center; padding: 10px 0; }
+
+    .inv-item.out-of-stock { opacity: 0.45; }
+    .inv-item { cursor: pointer; transition: border-color 0.2s; }
+    .inv-item:hover:not(.out-of-stock) { border-color: #2563eb; }
+
+    .live-dot {
+      display: inline-block; width: 7px; height: 7px;
+      background: #16a34a; border-radius: 50%; margin-right: 6px;
+      animation: pulse 1.5s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; } 50% { opacity: 0.3; }
+    }
+
+    /* ── Orders list ── */
+    .order-card {
+      background: #111;
+      border: 1px solid #2a2a2a;
+      border-radius: 8px;
+      padding: 14px 16px;
+      margin-bottom: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .order-info { flex: 1; min-width: 0; }
+    .order-id   { font-size: 11px; color: #555; font-family: monospace; margin-bottom: 4px; }
+    .order-items { font-size: 13px; color: #ccc; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+    .badge {
+      font-size: 11px;
+      font-weight: 600;
+      padding: 3px 10px;
+      border-radius: 20px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      white-space: nowrap;
+    }
+
+    .badge-pending    { background: #78350f; color: #fbbf24; }
+    .badge-processing { background: #1e3a5f; color: #60a5fa; }
+    .badge-completed  { background: #14532d; color: #4ade80; }
+    .badge-failed     { background: #450a0a; color: #f87171; }
+    .badge-cancelled  { background: #1f2937; color: #9ca3af; }
+
+    .cancel-btn {
+      background: none;
+      border: 1px solid #333;
+      color: #888;
+      padding: 5px 10px;
+      border-radius: 5px;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+    .cancel-btn:hover { border-color: #dc2626; color: #dc2626; }
+
+    /* ── Filter ── */
+    .filter-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+
+    .filter-btn {
+      padding: 5px 14px;
+      border-radius: 20px;
+      border: 1px solid #333;
+      background: none;
+      color: #888;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .filter-btn:hover,
+    .filter-btn.active { background: #2563eb; border-color: #2563eb; color: #fff; }
+
+    /* ── Toast ── */
+    #toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: #1f2937;
+      border: 1px solid #374151;
+      color: #e0e0e0;
+      padding: 12px 18px;
+      border-radius: 8px;
+      font-size: 13px;
+      max-width: 320px;
+      opacity: 0;
+      transform: translateY(10px);
+      transition: all 0.3s;
+      z-index: 1000;
+    }
+    #toast.show { opacity: 1; transform: translateY(0); }
+    #toast.success { border-color: #16a34a; }
+    #toast.error   { border-color: #dc2626; }
+
+    .refresh-hint {
+      font-size: 11px;
+      color: #444;
+      margin-bottom: 12px;
+    }
+
+    .empty-state {
+      text-align: center;
+      color: #444;
+      padding: 40px 0;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+
+<h1>Order Processing System</h1>
+
+<div class="layout">
+
+  <!-- LEFT: Form + Inventory -->
+  <div>
+
+    <!-- Inventory -->
+    <div class="card" style="margin-bottom: 16px;">
+      <h2><span class="live-dot"></span>Live Inventory</h2>
+      <p style="font-size:11px;color:#444;margin-bottom:12px;">
+        Click an item to add to cart
+      </p>
+      <div class="inv-grid" id="inv-grid">
+        <div class="inv-item"><span class="inv-name">loading...</span></div>
+      </div>
+    </div>
+
+    <!-- Cart -->
+    <div class="card cart-section" style="margin-bottom: 16px;">
+      <h2>Cart</h2>
+
+      <div id="cart-list">
+        <div class="cart-empty">No items added yet. Click an inventory item above.</div>
+      </div>
+
+      <!-- Quantity selector (shown when clicking inventory item) -->
+      <div id="add-to-cart-form" style="display:none; margin-top:12px; border-top:1px solid #2a2a2a; padding-top:12px;">
+        <div style="font-size:13px;color:#aaa;margin-bottom:8px;" id="adding-item-label">Adding: </div>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <input type="number" id="add-qty" value="1" min="1" max="20"
+                 style="width:70px;" />
+          <input type="number" id="add-price" value="100" min="1"
+                 placeholder="Price ₹" style="width:90px;" />
+          <button class="btn btn-primary" style="margin-top:0;" onclick="confirmAddToCart()">Add</button>
+        </div>
+      </div>
+
+      <button class="btn btn-primary" id="pay-btn" onclick="placeOrder()"
+              style="margin-top:14px;" disabled>
+        Pay with Razorpay
+      </button>
+
+      <div style="margin-top: 12px;">
+        <div style="font-size: 11px; color: #555; margin-bottom: 6px;">
+          TEST CARDS (use any future date + any CVV)
+        </div>
+        <div style="font-size: 11px; color: #666; line-height: 1.8;">
+          ✅ Success: 4111 1111 1111 1111<br>
+          ❌ Failure: 4000 0000 0000 0002
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- RIGHT: Orders List -->
+  <div class="card">
+    <h2>Orders</h2>
+    <div class="refresh-hint" id="refresh-hint">Auto-refreshes every 3 seconds</div>
+
+    <div class="filter-row">
+      <button class="filter-btn active" onclick="setFilter('all', this)">All</button>
+      <button class="filter-btn" onclick="setFilter('pending', this)">Pending</button>
+      <button class="filter-btn" onclick="setFilter('processing', this)">Processing</button>
+      <button class="filter-btn" onclick="setFilter('completed', this)">Completed</button>
+      <button class="filter-btn" onclick="setFilter('failed', this)">Failed</button>
+      <button class="filter-btn" onclick="setFilter('cancelled', this)">Cancelled</button>
+    </div>
+
+    <div id="orders-list">
+      <div class="empty-state">No orders yet</div>
+    </div>
+  </div>
+
+</div>
+
+<div id="toast"></div>
+
+<script>
+  // ── State ──────────────────────────────────────────────────────────────────
+  let currentFilter = 'all'
+
+  // Cart = list of { item_name, quantity, price, reservation_id }
+  let cart = []
+
+  // The item the user just clicked (pending qty input)
+  let pendingItem = null
+
+  // A unique key per browser tab — used to tie reservations to this tab
+  const SESSION_KEY = 'sess-' + Math.random().toString(36).slice(2)
+
+  // ── CSRF ──────────────────────────────────────────────────────────────────
+  function getCookie(name) {
+    const value = `; ${document.cookie}`
+    const parts = value.split(`; ${name}=`)
+    if (parts.length === 2) return parts.pop().split(';').shift()
+    return ''
+  }
+
+  // ── Toast ─────────────────────────────────────────────────────────────────
+  function showToast(msg, type = '') {
+    const t = document.getElementById('toast')
+    t.textContent = msg
+    t.className   = 'show ' + type
+    clearTimeout(t._timer)
+    t._timer = setTimeout(() => t.className = '', 4000)
+  }
+
+  function makeKey() {
+    return 'key-' + Date.now() + '-' + Math.random().toString(36).slice(2, 7)
+  }
+
+  // ── Inventory click → show qty form ───────────────────────────────────────
+  function clickInventoryItem(itemName, available) {
+    if (available === 0) {
+      showToast(`❌ ${itemName} is out of stock!`, 'error')
+      return
+    }
+    pendingItem = { itemName, available }
+    document.getElementById('adding-item-label').textContent =
+      `Adding: ${itemName} (${available} available)`
+    document.getElementById('add-qty').max = available
+    document.getElementById('add-qty').value = 1
+    document.getElementById('add-to-cart-form').style.display = 'block'
+  }
+
+  // ── "Add" button inside the qty form ──────────────────────────────────────
+// ── "Add" button → just adds to local cart, NO backend call yet ───────────
+  function confirmAddToCart() {
+    if (!pendingItem) return
+
+    const qty   = parseInt(document.getElementById('add-qty').value)
+    const price = parseFloat(document.getElementById('add-price').value)
+
+    if (qty < 1 || isNaN(price) || price < 1) {
+      showToast('Please enter valid quantity and price', 'error')
+      return
+    }
+
+    if (qty > pendingItem.available) {
+      showToast(`Only ${pendingItem.available} available!`, 'error')
+      return
+    }
+
+    // Just store locally — inventory is NOT touched yet
+    cart.push({
+      item_name: pendingItem.itemName,
+      quantity:  qty,
+      price:     price,
+      // reservation_id will be added when Pay is clicked
+    })
+
+    renderCart()
+    document.getElementById('add-to-cart-form').style.display = 'none'
+    pendingItem = null
+    showToast(`✅ ${qty}x ${cart[cart.length-1].item_name} added to cart! Inventory reserved when you pay.`, 'success')
+  }
+
+  // ── Remove item from cart → just remove locally (no reservation to release yet) ─
+  function removeFromCart(index) {
+    const item = cart[index]
+    cart.splice(index, 1)
+    renderCart()
+    showToast(`Removed ${item.item_name} from cart`, '')
+  }
+
+  // ── Render cart UI ────────────────────────────────────────────────────────
+  function renderCart() {
+    const el = document.getElementById('cart-list')
+    const payBtn = document.getElementById('pay-btn')
+
+    if (cart.length === 0) {
+      el.innerHTML = '<div class="cart-empty">No items added yet. Click an inventory item above.</div>'
+      payBtn.disabled = true
+      return
+    }
+
+    el.innerHTML = cart.map((item, i) => `
+      <div class="cart-item">
+        <div>
+          <div class="cart-item-name">${item.item_name}</div>
+          <div class="cart-item-qty">Qty: ${item.quantity} × ₹${item.price} = ₹${item.quantity * item.price}</div>
+        </div>
+        <button class="cart-remove" onclick="removeFromCart(${i})">Remove</button>
+      </div>
+    `).join('')
+
+    payBtn.disabled = false
+  }
+
+// ── Place Order: reserve stock → create order → open Razorpay ─────────────
+  async function placeOrder() {
+    if (cart.length === 0) {
+      showToast('Your cart is empty!', 'error')
+      return
+    }
+
+    const btn      = document.getElementById('pay-btn')
+    const cartItem = cart[0]   // Process first cart item
+
+    btn.disabled    = true
+    btn.textContent = 'Checking stock...'
+
+    // ── STEP 1: Reserve stock NOW (before Razorpay opens) ─────────────────
+    let reservationId = null
+    try {
+      const reserveRes = await fetch('/api/inventory/reserve/', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
+        body: JSON.stringify({
+          item_name:   cartItem.item_name,
+          quantity:    cartItem.quantity,
+          session_key: SESSION_KEY,
+        })
+      })
+
+      const reserveData = await reserveRes.json()
+
+      if (!reserveRes.ok) {
+        // Stock ran out between add-to-cart and pay — tell the user clearly
+        if (reserveData.available === 0) {
+          showToast(`❌ "${cartItem.item_name}" is now SOLD OUT! Please remove it from your cart.`, 'error')
+        } else {
+          showToast(reserveData.error || 'Could not reserve stock. Please try again.', 'error')
+        }
+        btn.disabled    = false
+        btn.textContent = 'Pay with Razorpay'
+        return
+      }
+
+      reservationId = reserveData.reservation_id
+
+    } catch (err) {
+      showToast('Network error while checking stock: ' + err.message, 'error')
+      btn.disabled    = false
+      btn.textContent = 'Pay with Razorpay'
+      return
+    }
+
+    // ── STEP 2: Create order on backend ───────────────────────────────────
+    btn.textContent = 'Opening payment...'
+    try {
+      const orderRes = await fetch('/api/orders/razorpay/create/', {
+        method:  'POST',
+        headers: {
+          'Content-Type':    'application/json',
+          'Idempotency-Key': makeKey(),
+          'X-CSRFToken':     getCookie('csrftoken'),
+        },
+        body: JSON.stringify({
+          items:          [{ name: cartItem.item_name, quantity: cartItem.quantity, price: cartItem.price }],
+          reservation_id: reservationId,
+        })
+      })
+
+      const orderData = await orderRes.json()
+
+      if (!orderRes.ok) {
+        await releaseStock(reservationId)   // Restore stock — order failed
+        showToast('Order error: ' + (orderData.error || 'Unknown'), 'error')
+        btn.disabled    = false
+        btn.textContent = 'Pay with Razorpay'
+        return
+      }
+
+      // ── STEP 3: Open Razorpay popup ───────────────────────────────────
+      const rzp = new Razorpay({
+        key:         orderData.razorpay_key_id,
+        amount:      orderData.amount_paise,
+        currency:    'INR',
+        name:        'Order System',
+        description: `${cartItem.quantity}x ${cartItem.item_name}`,
+        order_id:    orderData.razorpay_order_id,
+
+        handler: async function(response) {
+          // ── Payment SUCCESS ────────────────────────────────────────────
+          showToast('Payment received. Verifying...', '')
+
+          const verifyRes = await fetch('/api/orders/razorpay/verify/', {
+            method:  'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
+            body: JSON.stringify({
+              order_id:            orderData.order.id,
+              razorpay_order_id:   response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature:  response.razorpay_signature,
+              reservation_id:      reservationId,
+            })
+          })
+
+          if (verifyRes.ok) {
+            showToast('✅ Order placed! Processing in background.', 'success')
+            cart.splice(0, 1)   // Remove the paid item from cart
+            renderCart()
+            loadOrders()
+          } else {
+            // Verification failed → restore stock
+            await releaseStock(reservationId)
+            showToast('Payment verification failed. Stock has been restored.', 'error')
+          }
+
+          btn.disabled    = false
+          btn.textContent = 'Pay with Razorpay'
+        },
+
+        prefill: { name: 'Test User', email: 'test@example.com' },
+        theme:   { color: '#2563eb' },
+
+        modal: {
+          ondismiss: async function() {
+            // ── Payment CANCELLED by user → restore stock ──────────────
+            await releaseStock(reservationId)
+            showToast('Payment cancelled. Stock has been restored.', '')
+            btn.disabled    = false
+            btn.textContent = 'Pay with Razorpay'
+          }
+        }
+      })
+
+      rzp.open()
+
+    } catch (err) {
+      await releaseStock(reservationId)
+      showToast('Error: ' + err.message, 'error')
+      btn.disabled    = false
+      btn.textContent = 'Pay with Razorpay'
+    }
+  }
+
+  // ── Helper: release a reservation (restore stock) ─────────────────────────
+  async function releaseStock(reservationId) {
+    if (!reservationId) return
+    try {
+      await fetch('/api/inventory/release/', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
+        body: JSON.stringify({ reservation_id: reservationId })
+      })
+    } catch (e) {
+      console.warn('releaseStock failed:', e)
+    }
+  }
+
+  // ── Filter orders ─────────────────────────────────────────────────────────
+  function setFilter(f, el) {
+    currentFilter = f
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'))
+    el.classList.add('active')
+    loadOrders()
+  }
+
+  // ── Load Orders ───────────────────────────────────────────────────────────
+  async function loadOrders() {
+    try {
+      const url = currentFilter === 'all'
+        ? '/api/orders/list/'
+        : `/api/orders/list/?status=${currentFilter}`
+
+      const res    = await fetch(url)
+      const orders = await res.json()
+      renderOrders(orders)
+    } catch (err) {
+      console.error('Failed to load orders:', err)
+    }
+  }
+
+  function renderOrders(orders) {
+    const el = document.getElementById('orders-list')
+
+    if (!orders.length) {
+      el.innerHTML = '<div class="empty-state">No orders found</div>'
+      return
+    }
+
+    el.innerHTML = orders.map(o => `
+      <div class="order-card">
+        <div class="order-info">
+          <div class="order-id">${o.id}</div>
+          <div class="order-items">${formatTime(o.created_at)}</div>
+        </div>
+        <span class="badge badge-${o.status}">${o.status}</span>
+        ${['pending','processing'].includes(o.status) ? `
+          <button class="cancel-btn" onclick="cancelOrder('${o.id}')">Cancel</button>
+        ` : ''}
+      </div>
+    `).join('')
+  }
+
+  function formatTime(ts) {
+    return new Date(ts).toLocaleTimeString('en-IN', {
+      hour: '2-digit', minute: '2-digit', second: '2-digit'
+    })
+  }
+
+  // ── Cancel Order ──────────────────────────────────────────────────────────
+  async function cancelOrder(orderId) {
+    if (!confirm('Cancel this order?')) return
+
+    try {
+      const res = await fetch(`/api/orders/${orderId}/cancel/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') }
+      })
+
+      if (res.ok) {
+        showToast('Order cancelled — stock restored', 'success')
+        loadOrders()
+      } else {
+        const data = await res.json()
+        showToast('Cannot cancel: ' + (data.error || 'Unknown error'), 'error')
+      }
+    } catch (err) {
+      showToast('Error: ' + err.message, 'error')
+    }
+  }
+
+  // ── Inventory rendering ───────────────────────────────────────────────────
+  // currentInventory holds the latest data from SSE
+  let currentInventory = []
+
+  function renderInventory(items) {
+    currentInventory = items
+    const el = document.getElementById('inv-grid')
+    el.innerHTML = items.map(item => {
+      const cls     = item.quantity === 0 ? 'zero' : item.quantity <= 2 ? 'low' : ''
+      const outCls  = item.quantity === 0 ? 'out-of-stock' : ''
+      const onClick = item.quantity === 0
+        ? ''
+        : `onclick="clickInventoryItem('${item.item_name}', ${item.quantity})"`
+      return `
+        <div class="inv-item ${outCls}" ${onClick}>
+          <span class="inv-name">${item.item_name}</span>
+          <span class="inv-count ${cls}">${item.quantity === 0 ? 'OUT' : item.quantity}</span>
+        </div>
+      `
+    }).join('')
+
+    // If any cart item is now 0, warn user
+    cart.forEach((cartItem, i) => {
+      const inv = items.find(it => it.item_name === cartItem.item_name)
+      if (inv && inv.quantity === 0 && !cartItem._warned) {
+        cartItem._warned = true
+        showToast(
+          `⚠️ "${cartItem.item_name}" stock changed! Your reservation is still held.`,
+          'error'
+        )
+      }
+    })
+  }
+
+  // ── Server-Sent Events: live inventory updates ────────────────────────────
+  function startInventoryStream() {
+    const source = new EventSource('/api/inventory/stream/')
+    source.onmessage = function(event) {
+      const items = JSON.parse(event.data)
+      renderInventory(items)
+    }
+    source.onerror = function() {
+      // SSE disconnected — fall back to polling
+      source.close()
+      console.warn('SSE disconnected, falling back to polling')
+      setInterval(() => {
+        fetch('/api/inventory/')
+          .then(r => r.json())
+          .then(renderInventory)
+      }, 2000)
+    }
+  }
+
+  // ── Auto refresh orders every 2 seconds ──────────────────────────────────
+  setInterval(loadOrders, 2000)
+
+  // ── Update refresh hint text ──────────────────────────────────────────────
+  document.getElementById('refresh-hint').textContent = 'Orders refresh every 2 seconds. Inventory updates live.'
+
+  // ── Init ──────────────────────────────────────────────────────────────────
+  loadOrders()
+  startInventoryStream()
+</script>
+
+</body>
+</html>
